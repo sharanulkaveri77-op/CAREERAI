@@ -1,9 +1,9 @@
-import Anthropic from '@anthropic-ai/sdk';
+import Groq from 'groq-sdk';
 
-let anthropic: Anthropic | null = null;
-if (process.env.ANTHROPIC_API_KEY) {
-  anthropic = new Anthropic({
-    apiKey: process.env.ANTHROPIC_API_KEY,
+let groq: Groq | null = null;
+if (process.env.GROQ_API_KEY) {
+  groq = new Groq({
+    apiKey: process.env.GROQ_API_KEY,
   });
 }
 
@@ -22,8 +22,8 @@ export interface ClaudeAnalysis {
 }
 
 export const analyzeResumeWithClaude = async (resumeText: string): Promise<ClaudeAnalysis> => {
-  if (!anthropic) {
-    console.log('No ANTHROPIC_API_KEY found. Returning mock Claude analysis.');
+  if (!groq) {
+    console.log('No GROQ_API_KEY found. Returning mock analysis.');
     return generateMockClaudeAnalysis();
   }
 
@@ -55,15 +55,14 @@ export const analyzeResumeWithClaude = async (resumeText: string): Promise<Claud
   `;
 
   try {
-    const response = await anthropic.messages.create({
-      model: "claude-3-haiku-20240307",
+    const response = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
       max_tokens: 1500,
       temperature: 0,
       messages: [{ role: "user", content: prompt }]
     });
 
-    // @ts-ignore - The response content is an array of content blocks, we extract the text
-    const rawText = response.content[0].text;
+    const rawText = response.choices[0]?.message?.content || "";
 
     // Clean up potential markdown formatting from the AI response
     const cleanJsonText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -71,8 +70,8 @@ export const analyzeResumeWithClaude = async (resumeText: string): Promise<Claud
 
     return parsedData as ClaudeAnalysis;
   } catch (error) {
-    console.error('Claude API failed:', error);
-    throw new Error('Failed to analyze resume with Claude AI');
+    console.error('Groq API failed:', error);
+    throw new Error('Failed to analyze resume with AI');
   }
 };
 
@@ -116,8 +115,8 @@ export interface ClaudeRoadmapMonth {
 }
 
 export const generateRoadmapWithClaude = async (targetRole: string, missingSkills: string[]): Promise<ClaudeRoadmapMonth[]> => {
-  if (!anthropic) {
-    console.log('No ANTHROPIC_API_KEY found. Returning mock Claude roadmap.');
+  if (!groq) {
+    console.log('No GROQ_API_KEY found. Returning mock roadmap.');
     return generateMockRoadmap(targetRole, missingSkills);
   }
 
@@ -149,20 +148,19 @@ export const generateRoadmapWithClaude = async (targetRole: string, missingSkill
   `;
 
   try {
-    const response = await anthropic.messages.create({
-      model: "claude-3-haiku-20240307",
+    const response = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
       max_tokens: 2000,
       temperature: 0.2,
       messages: [{ role: "user", content: prompt }]
     });
 
-    // @ts-ignore
-    const rawText = response.content[0].text;
+    const rawText = response.choices[0]?.message?.content || "";
     const cleanJsonText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
     return JSON.parse(cleanJsonText) as ClaudeRoadmapMonth[];
   } catch (error) {
-    console.error('Claude API failed:', error);
-    throw new Error('Failed to generate roadmap with Claude AI');
+    console.error('Groq API failed:', error);
+    throw new Error('Failed to generate roadmap with AI');
   }
 };
 
@@ -261,8 +259,8 @@ export const evaluateInterviewAnswerWithClaude = async (
   latestAnswer: string
 ): Promise<ClaudeInterviewEvaluation> => {
   
-  if (!anthropic) {
-    console.log('No ANTHROPIC_API_KEY found. Returning mock Interview Evaluation.');
+  if (!groq) {
+    console.log('No GROQ_API_KEY found. Returning mock Interview Evaluation.');
     return generateMockInterviewEvaluation(targetRole, chatHistory, latestAnswer);
   }
 
@@ -295,20 +293,19 @@ export const evaluateInterviewAnswerWithClaude = async (
   `;
 
   try {
-    const response = await anthropic.messages.create({
-      model: "claude-3-haiku-20240307",
+    const response = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
       max_tokens: 1500,
       temperature: 0.2,
       messages: [{ role: "user", content: prompt }]
     });
 
-    // @ts-ignore
-    const rawText = response.content[0].text;
+    const rawText = response.choices[0]?.message?.content || "";
     const cleanJsonText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
     return JSON.parse(cleanJsonText) as ClaudeInterviewEvaluation;
   } catch (error) {
-    console.error('Claude API failed:', error);
-    throw new Error('Failed to evaluate interview answer with Claude AI');
+    console.error('Groq API failed:', error);
+    throw new Error('Failed to evaluate interview answer with AI');
   }
 };
 
@@ -341,21 +338,20 @@ const generateMockInterviewEvaluation = (
 };
 
 export const getInitialInterviewQuestion = async (targetRole: string): Promise<string> => {
-  if (!anthropic) {
+  if (!groq) {
     return `Welcome to your mock interview for the ${targetRole} position! Let's start with a foundational question: Can you describe your experience with the core technologies used in this role and how you keep your skills up to date?`;
   }
 
   const prompt = `You are interviewing a candidate for a "${targetRole}" role. Ask them a strong, open-ended introductory technical question to start the interview. Return ONLY the string question, no JSON, no quotes.`;
   
   try {
-    const response = await anthropic.messages.create({
-      model: "claude-3-haiku-20240307",
+    const response = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
       max_tokens: 500,
       temperature: 0.5,
       messages: [{ role: "user", content: prompt }]
     });
-    // @ts-ignore
-    return response.content[0].text;
+    return response.choices[0]?.message?.content || `Can you describe your experience and why you are a good fit for the ${targetRole} role?`;
   } catch (error) {
     return `Can you describe your experience and why you are a good fit for the ${targetRole} role?`;
   }

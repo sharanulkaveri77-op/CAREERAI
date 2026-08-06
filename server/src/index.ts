@@ -3,6 +3,9 @@ import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 
+// Load environment variables early
+dotenv.config();
+
 import { connectDB } from './config/db';
 import authRoutes from './routes/auth.routes';
 import resumeRoutes from './routes/resume.routes';
@@ -10,9 +13,6 @@ import jobRoutes from './routes/job.routes';
 import roadmapRoutes from './routes/roadmap.routes';
 import interviewRoutes from './routes/interview.routes';
 import analyticsRoutes from './routes/analytics.routes';
-
-// Load environment variables
-dotenv.config();
 
 // Connect to MongoDB
 connectDB();
