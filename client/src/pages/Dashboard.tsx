@@ -7,6 +7,7 @@ import { ATSReport } from '../features/resume/ATSReport';
 import { JobMatcher } from '../features/jobs/JobMatcher';
 import { RoadmapView } from '../features/roadmap/RoadmapView';
 import { InterviewSimulator } from '../features/interview/InterviewSimulator';
+import { ApplicationTracker } from '../features/applications/ApplicationTracker';
 import { AnalyticsDashboard } from '../features/analytics/AnalyticsDashboard';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 
@@ -99,6 +100,10 @@ export const Dashboard = () => {
 
       <div className="pt-8 border-t border-slate-200">
         <JobMatcher />
+      </div>
+
+      <div className="pt-8 border-t border-slate-200">
+        <ApplicationTracker />
       </div>
     </div>
   );

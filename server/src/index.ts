@@ -10,6 +10,7 @@ import jobRoutes from './routes/job.routes';
 import roadmapRoutes from './routes/roadmap.routes';
 import interviewRoutes from './routes/interview.routes';
 import analyticsRoutes from './routes/analytics.routes';
+import applicationsRoutes from './routes/applications.routes';
 
 // Connect to MongoDB
 connectDB();
@@ -29,6 +30,7 @@ app.use('/api/jobs', jobRoutes);
 app.use('/api/roadmap', roadmapRoutes);
 app.use('/api/interview', interviewRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/applications', applicationsRoutes);
 
 // Basic health-check route
 app.get('/api/health', (req: Request, res: Response) => {

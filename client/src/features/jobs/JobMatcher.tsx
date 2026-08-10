@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Database, Search, Loader2, Sparkles } from 'lucide-react';
+import { Database, Search, Loader2, Sparkles, PlusCircle, CheckCircle2 } from 'lucide-react';
 import api from '../../lib/axios';
 import { SkillGapCard } from './SkillGapCard';
+import { useTrackerStore } from '../../store/useTrackerStore';
 
 export const JobMatcher = () => {
   const [jobs, setJobs] = useState<any[]>([]);
@@ -10,6 +11,15 @@ export const JobMatcher = () => {
   const [seeding, setSeeding] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState('');
+  const [addedJobIds, setAddedJobIds] = useState<Set<string>>(new Set());
+  const queueJobFromMatch = useTrackerStore((state) => state.queueJobFromMatch);
+
+  const handleAddToTracker = (job: any) => {
+    if (addedJobIds.has(job._id)) return;
+    // matchScore arrives as a 0-1 cosine similarity; the board stores 0-100
+    queueJobFromMatch({ jobId: job._id, matchScore: Math.round(job.matchScore * 100) });
+    setAddedJobIds((prev) => new Set(prev).add(job._id));
+  };
 
   const fetchMatchedJobs = async () => {
     setLoading(true);
@@ -109,20 +119,35 @@ export const JobMatcher = () => {
         {jobs.map((job) => (
           <div key={job._id} className="relative">
             <SkillGapCard job={job} />
-            {job.missingSkills.length > 0 && (
+            <div className="flex gap-2 mt-2">
+              {job.missingSkills.length > 0 && (
+                <button
+                  onClick={() => handleGenerateRoadmap(job)}
+                  disabled={generating}
+                  className="flex-1 flex items-center justify-center py-3 px-4 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-colors disabled:opacity-50"
+                >
+                  {generating ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Sparkles className="w-4 h-4 mr-2 text-amber-400" />
+                  )}
+                  Generate AI Roadmap
+                </button>
+              )}
               <button
-                onClick={() => handleGenerateRoadmap(job)}
-                disabled={generating}
-                className="w-full mt-2 flex items-center justify-center py-3 px-4 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-colors disabled:opacity-50"
+                onClick={() => handleAddToTracker(job)}
+                disabled={addedJobIds.has(job._id)}
+                className="flex items-center justify-center px-4 py-3 bg-slate-100 text-slate-700 rounded-xl text-sm font-bold hover:bg-slate-200 transition-colors disabled:opacity-60"
+                title="Add to application tracker"
               >
-                {generating ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                {addedJobIds.has(job._id) ? (
+                  <CheckCircle2 className="w-4 h-4 mr-2 text-green-600" />
                 ) : (
-                  <Sparkles className="w-4 h-4 mr-2 text-amber-400" />
+                  <PlusCircle className="w-4 h-4 mr-2" />
                 )}
-                Generate AI Roadmap to fill gap
+                {addedJobIds.has(job._id) ? 'Added' : 'Track'}
               </button>
-            )}
+            </div>
           </div>
         ))}
       </div>

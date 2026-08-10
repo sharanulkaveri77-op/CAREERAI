@@ -60,8 +60,27 @@ Phase-by-phase record of what has been built, what was assumed, and what needs m
 3. Without a key… (no longer applicable — key is now set) rules still work via rule-based extraction.
 4. Check the checklist details text — they are candidate-facing advice, usable in the demo.
 
+## Phase C — Application Tracker (Kanban) (COMPLETE)
+
+### Built
+- **`server/src/models/Application.ts`** — `{ user, job?, title, company, jobUrl, matchScore(0-100), status, position }` with a compound index `{user, status, position}` covering the board query; statuses strictly enumerated.
+- **Controller + routes** under `/api/applications`: list (board order), create (from match engine or manual), patch (drag-drop persistence), delete. Column moves auto-append at the end of the new column; duplicates by job ref are rejected (409).
+- **`client/src/features/applications/ApplicationTracker.tsx`** — real drag-and-drop via `@dnd-kit/core` (PointerSensor with 6px activation distance so clicks/card buttons don't trigger drags). Optimistic column move + PATCH, revert+refetch on failure. Match-score badge (cosmetic-similarity % or "manual"), hover-reveal delete, empty-state "Drop jobs here", manual add form (title/company/URL).
+- **Job Matcher integration** — "Track" button per matched job → `useTrackerStore` (zustand) pending-job bridge → tracker POSTs with `jobId + matchScore*100`; "Added ✓" state, and the server pulls title/company from the Job doc (client can't spoof text).
+- Wired as a new dashboard section below the job matcher.
+
+### Assumptions
+- Within-column reordering is not supported (only column-to-column) — `position` still persists for future sorting work. Keeps dnd surface small and robust.
+- `@dnd-kit/sortable` deliberately not used; cards append to the end of a column.
+
+### Manual test checklist
+1. Seed jobs if empty → cards show on saved column after clicking Track.
+2. Drag a card between columns → refreshes (F5) and it stays where dropped.
+3. Add a manual job → appears in Saved; delete both kinds of cards.
+4. Track the same job twice → friendly "already on your board" error.
+5. Kill the backend mid-drag → card reverts to its original column.
+
 ## Next phases
-- **Phase C**: Application Tracker Kanban board (@dnd-kit) tied to job matches.
 - **Phase D**: Gamified progress (streaks, XP, badges).
 - **Phase E**: PDF export (resume report + roadmap).
 - **Phase F**: Polish, tests, GitHub Actions, README/deploy finalization.

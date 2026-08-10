@@ -46,3 +46,17 @@ The keyword check (50 pts) only exists when a JD is pasted. Score = earned/avail
 
 ### D13: Persist resumeText once, reanalyze many times
 `ResumeAnalysis.resumeText` (cap 20k) means ATS (and later: placement analytics, PDF export) can re-run against the stored text without asking the user to re-upload. Costs ~20KB/document in MongoDB — a fair trade for the UI flow.
+
+## Phase C decisions
+
+### D14: Server is the source of truth for board state
+Drag-and-drop mutates local state optimistically but every move is PATCHed to MongoDB; on failure the board reverts and refetches. This gives instant UI feedback with zero risk of the demo showing a lie.
+
+### D15: State bridge via zustand, not prop drilling
+JobMatcher → ApplicationTracker cross-component communication uses a tiny 3-line zustand slice (pending job queue) instead of lifting state into Dashboard. Components stay independently mountable and testable.
+
+### D16: Trust boundaries on the create endpoint
+When adding a matched job, title/company are loaded server-side from the Job document — the client only sends `{jobId, matchScore}`. Manual entries require title/company from the user. Prevents payload spoofing between the two flows.
+
+### D17: No @dnd-kit/sortable (yet)
+Column-to-column drags via `@dnd-kit/core` cover the master-prompt requirement; in-column sorting is deferred. `position` is still persisted so adding sortable later is a UI-only change.
