@@ -85,3 +85,14 @@ One source of truth renders both PDFs, the ATS structure score inside the report
 
 ### D24: Keep exports deterministic
 No AI calls in the export path; only stored data + rule-based checks. Exporting is fast, offline-safe and never blocked by a Groq outage.
+
+## Phase F decisions
+
+### D25: Tests assert on extracted PDF text, not just file headers
+The export tests round-trip generated PDFs through pdf-parse's `PDFParse({data})` so they verify real content (section titles, scores, roadmap months), not merely that a %PDF header exists.
+
+### D26: Jest runs with `--experimental-vm-modules`
+pdf-parse v2 bundles pdfjs-dist, which uses dynamic `import()`. The test script sets `NODE_OPTIONS` via `cross-env` so the suite runs identically on Windows, macOS and Linux CI.
+
+### D27: Extraction of pure badge logic for unit testing
+`evaluateNewBadges(earnedIds, ctx)` is a pure function of the same context object `awardXp` builds — the 37-test suite covers badge thresholds without requiring a database connection.

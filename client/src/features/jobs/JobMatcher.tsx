@@ -40,7 +40,7 @@ export const JobMatcher = () => {
     try {
       await api.post('/jobs/seed');
       await fetchMatchedJobs();
-    } catch (err: any) {
+    } catch {
       setError('Failed to seed jobs database');
     } finally {
       setSeeding(false);
@@ -56,7 +56,7 @@ export const JobMatcher = () => {
       });
       // Refresh the page to trigger Dashboard to load the roadmap
       window.location.reload();
-    } catch (err: any) {
+    } catch {
       alert('Failed to generate roadmap');
     } finally {
       setGenerating(false);

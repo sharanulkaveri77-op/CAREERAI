@@ -1,27 +1,36 @@
-# CareerAI
+# CareerAI — Intelligent Career Growth Platform
 
-CareerAI is an intelligent, AI-powered career coaching platform that helps job seekers align their skills with market demand, generate personalized learning roadmaps, and practice with mock technical interviews.
+CareerAI is an AI-powered career coaching platform that helps job seekers align their skills with market demand, generate personalized learning roadmaps, practice technical interviews, and track applications to offer. Built as a full-stack capstone with React, TypeScript, Express, MongoDB and the Groq AI API.
 
 ![Dashboard Preview](./client/public/dashboard-placeholder.png)
 
 ## Features
-- **Resume Parsing & Scoring**: Upload your PDF/DOCX resume and get an instant ATS-style score.
-- **Smart Job Matching**: Uses vector embeddings and Cosine Similarity to find the best fit among seed job listings.
-- **AI Career Roadmaps**: Generates a month-by-month study plan based on your missing skills using the Groq AI API.
-- **Mock Interview Simulator**: A chat-based interview room where AI acts as a technical recruiter, scoring your answers in real-time.
-- **Premium Analytics**: Recharts-powered dashboard tracking your growth.
+
+| Module | What it does |
+| --- | --- |
+| **Resume Parsing & AI Scoring** | Upload PDF/DOCX, get parsed, scored, rewritten bullets and section feedback from Groq (Llama 3.3 70B). Raw text is stored for reuse. |
+| **ATS Compatibility Checker** | Rule-based audit of parseability (contact info, standard sections, length, layout, action verbs) plus AI keyword extraction against a job description. Deterministic scores — no flaky AI inference on structure. |
+| **Smart Job Matching** | Vector embeddings + Cosine Similarity against a seed job catalog; per-job missing-skill gaps and an **AI roadmap** generated from those gaps. |
+| **AI Career Roadmaps** | Month-by-month study plans with tasks you can tick off; progress persists and feeds the analytics dashboard. |
+| **Mock Interview Simulator** | Chat-based interview room where the AI acts as a recruiter, asks follow-ups and scores each answer until the interview ends. |
+| **Application Tracker (Kanban)** | Drag-and-drop board — Saved → Applied → Interviewing → Offer → Rejected — wired to matched jobs with a one-click "Track" button. |
+| **Gamification** | XP, levels, daily activity streaks and 13 badges awarded server-side across every module. |
+| **PDF Export** | Download your resume report (with embedded ATS audit) or your roadmap as a styled PDF. |
+| **Premium Analytics** | Recharts dashboard of scores, roadmap progress and interview performance. |
 
 ## Architecture
-- **Frontend**: React, TypeScript, Vite, Tailwind CSS, Zustand, Recharts, Lucide Icons.
-- **Backend**: Node.js, Express, TypeScript, MongoDB (Mongoose), JWT Auth.
-- **AI**: Groq API (Llama 3.3 70B for reasoning, Llama 3.1 8B for fast lightweight calls).
+
+- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS, Zustand, Recharts, Lucide icons, `@dnd-kit` core.
+- **Backend**: Node.js, Express 5, TypeScript, MongoDB (Mongoose), JWT auth, Multer, pdfkit.
+- **AI**: Groq API — Llama 3.3 70B for deep reasoning (analysis, roadmap, interview), Llama 3.1 8B for fast calls (keyword extraction, embeddings fallback). Every AI call falls back to deterministic mock logic when `GROQ_API_KEY` is absent, so the whole app runs offline.
+- **Testing**: Jest + ts-jest (server), oxlint (client), GitHub Actions CI on every push.
 
 ## Local Setup
 
 ### Prerequisites
-- Node.js v18+
-- MongoDB (Local or Atlas) - *Optional: App falls back to in-memory DB if no URI is provided.*
-- Groq API Key - *Optional: App falls back to Mock logic if no key is provided.*
+- Node.js v18+ (v22 recommended)
+- MongoDB (local or Atlas) — *optional: falls back to an in-memory DB when no URI is provided*
+- Groq API key — *optional: falls back to mock AI*
 
 ### Installation
 
@@ -32,8 +41,7 @@ CareerAI is an intelligent, AI-powered career coaching platform that helps job s
    cd ../server && npm install
    ```
 
-3. Set up environment variables:
-   Create a `.env` file in the `/server` directory:
+3. Set up environment variables — create a `.env` in `/server`:
    ```env
    PORT=5000
    MONGODB_URI=your_mongodb_connection_string
@@ -42,30 +50,46 @@ CareerAI is an intelligent, AI-powered career coaching platform that helps job s
    ```
 
 4. Run the development servers:
-   **Terminal 1 (Backend)**
    ```bash
+   # Terminal 1 (Backend)
    cd server
    npm run dev
-   ```
 
-   **Terminal 2 (Frontend)**
-   ```bash
+   # Terminal 2 (Frontend)
    cd client
    npm run dev
    ```
 
-5. Open your browser and navigate to `http://localhost:5173`.
+5. Open `http://localhost:5173`, register an account, and start with the **Seed Sample Jobs** button in the Job Matcher.
 
-## Testing
-The backend features Jest unit tests for the core AI vector math.
+## Testing & CI
+
 ```bash
-cd server
-npm test
+cd server && npm test        # 37 Jest tests: ATS rules, embeddings, gamification, PDF builders
+cd client && npm run lint    # oxlint
+cd client && npm run build   # tsc + vite production build
 ```
 
-## Deployment
-This project is configured for automated CI/CD.
-- **Frontend**: Configured for Vercel (`vercel.json`).
-- **Backend**: Configured for Render (`render.yaml`).
+GitHub Actions runs the server suite and the client lint/build on every push to `main`.
 
-Check the `deployment_checklist.md` for step-by-step launch instructions.
+## Build Phases
+
+Phases A–E are complete and each was shipped as a single commit:
+
+| Phase | Deliverable | Commit |
+| --- | --- | --- |
+| A | Groq AI migration (dual-model, offline fallbacks) | `7fa133f` |
+| B | ATS Compatibility Checker | `2c0f56b` |
+| C | Application Tracker Kanban (@dnd-kit) | `47e2f6d` |
+| D | Gamification (XP, streaks, badges) | `ed4d30d` |
+| E | PDF export (resume report + roadmap) | `36c7811` |
+| F | Polish, tests, CI, docs | *current* |
+
+See `PROGRESS.md` for per-phase notes and manual test checklists, and `DECISIONS.md` for the reasoning behind each architectural choice.
+
+## Deployment
+
+- **Frontend**: configured for Vercel (`vercel.json`).
+- **Backend**: configured for Render (`render.yaml`).
+
+Follow `deployment_checklist.md` for step-by-step launch instructions.

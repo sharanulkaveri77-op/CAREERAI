@@ -130,6 +130,17 @@ const COUNT_FIELD: Record<GamificationEvent, keyof IGamification['counts']> = {
 export const xpRequiredForLevel = (level: number): number => (level - 1) ** 2 * 150;
 export const levelForXp = (xp: number): number => Math.floor(Math.sqrt(xp / 150)) + 1;
 
+export interface BadgeCheckContext {
+  xp: number;
+  streak: number;
+  counts: IGamification['counts'];
+  meta: Record<string, unknown>;
+}
+
+/** Pure badge evaluation — which not-yet-earned badges unlock for a context. */
+export const evaluateNewBadges = (earnedIds: string[], ctx: BadgeCheckContext): string[] =>
+  BADGE_CATALOG.filter((b) => !earnedIds.includes(b.id) && b.check(ctx)).map((b) => b.id);
+
 const toDateKey = (d: Date): string => d.toISOString().slice(0, 10);
 
 export interface AwardResult {

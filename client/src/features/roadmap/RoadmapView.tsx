@@ -47,7 +47,7 @@ export const RoadmapView = () => {
 
       // Background API call
       await api.put(`/roadmap/task/${monthId}/${taskId}`);
-    } catch (err) {
+    } catch {
       // Revert on error
       fetchRoadmap();
     }

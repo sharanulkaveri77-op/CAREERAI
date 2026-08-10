@@ -119,7 +119,27 @@ Phase-by-phase record of what has been built, what was assumed, and what needs m
 2. Generate a roadmap → Download "Career Roadmap" → checkboxes reflect completed tasks.
 3. Fresh account → both buttons show the "nothing to export yet" message.
 
-## Next phases
-- **Phase D**: Gamified progress (streaks, XP, badges).
-- **Phase E**: PDF export (resume report + roadmap).
-- **Phase F**: Polish, tests, GitHub Actions, README/deploy finalization.
+## Phase F — Polish, Tests, CI, Docs (COMPLETE)
+
+### Built
+- **New test suites** (server now **37 tests**, all passing):
+  - `gamification.service.test.ts` — level curve, XP table, and all badge thresholds (including 90+ ATS and 7-day streak edge boundaries) via the newly extracted pure `evaluateNewBadges` helper.
+  - `export.service.test.ts` — builds real PDFs with pdfkit and re-extracts their text via pdf-parse's `PDFParse({data})` API to assert actual content, page validity (`%PDF-`/`%%EOF`) and score/roadmap rendering.
+- **CI**: `.github/workflows/ci.yml` — server (build + jest) and client (oxlint + tsc/vite build) jobs on every push/PR to `main`. Requires `--experimental-vm-modules` for pdfjs under Jest, added via `cross-env` in the test script (cross-platform).
+- **README.md**: full rewrite — feature table for all six modules, updated architecture, phases table with commit hashes, testing/dev instructions.
+- **Lint cleanup**: removed unused catch params in JobMatcher/RoadmapView; `npm run lint` now reports zero warnings.
+
+### Verified (final pass)
+- Server: `tsc` clean, 37/37 Jest tests pass.
+- Client: oxlint zero warnings, `tsc -b && vite build` clean.
+- Runtime smoke: server boots, `/api/health` OK, protected `/api/export/*` returns 401 unauthenticated.
+
+### Full manual test checklist (all phases)
+1. Register/login → dashboard loads with analytics.
+2. Upload resume → score + feedback; run ATS check with a JD; watch XP/gamification card update live.
+3. Seed sample jobs → "Track" a matched job → appears on the Kanban board; drag between columns.
+4. Generate an AI roadmap from a match → tick tasks; complete a mock interview.
+5. Download both PDFs → resume report contains the ATS audit; roadmap shows checkbox progress.
+6. Badge shelf: Documented, On Board, Stargazer, Interview Ready unlock in order; streak flame appears next session.
+
+## ALL PHASES COMPLETE — delivery ready
