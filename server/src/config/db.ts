@@ -5,17 +5,21 @@ export const connectDB = async () => {
   try {
     let uri = process.env.MONGODB_URI;
 
-    // If no URI is provided, spin up an in-memory MongoDB instance for development!
+    // Without a URI the app starts a throwaway in-memory MongoDB — fine for
+    // local dev, useless in production (Vercel functions are stateless).
     if (!uri) {
+      if (process.env.VERCEL) {
+        throw new Error('MONGODB_URI is required in production (Vercel). Set it in the project environment.');
+      }
       console.log('No MONGODB_URI provided. Starting in-memory MongoDB for local development...');
       const mongoServer = await MongoMemoryServer.create();
       uri = mongoServer.getUri();
     }
 
     const conn = await mongoose.connect(uri);
-    console.log(`MongoDB Connected: ${conn.connection.host} (Using In-Memory Database)`);
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
   } catch (error) {
     console.error(`Error connecting to MongoDB: ${error instanceof Error ? error.message : error}`);
-    process.exit(1);
+    throw error;
   }
 };

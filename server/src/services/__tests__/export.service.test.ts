@@ -1,17 +1,11 @@
 import { describe, expect, it } from '@jest/globals';
+import pdfParse from 'pdf-parse';
 import { buildResumeReportPdf, buildRoadmapPdf } from '../export.service';
 import type { IUser } from '../../models/User';
 import type { IResumeAnalysis } from '../../models/ResumeAnalysis';
 
-// pdf-parse v2's runtime shape (class PDFParse) differs from its @types (v1 callable API).
-// The app's parser.service.ts uses the same `new PDFParse({ data })` pattern.
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const PDFParse: new (opts: { data: Buffer }) => { getText(): Promise<{ text: string }> } =
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  require('pdf-parse').PDFParse;
-
 const textOf = async (buffer: Buffer): Promise<string> => {
-  const result = await new PDFParse({ data: buffer }).getText();
+  const result = await pdfParse(buffer);
   // Collapse wrapped line breaks so layout-dependent assertions stay stable
   return result.text.replace(/\s+/g, ' ').trim();
 };

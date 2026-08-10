@@ -1,12 +1,11 @@
-import { PDFParse } from 'pdf-parse';
+import pdfParse from 'pdf-parse';
 import mammoth from 'mammoth';
 
 export const parseResumeBuffer = async (buffer: Buffer, mimetype: string): Promise<string> => {
   try {
     if (mimetype === 'application/pdf') {
-      // pdf-parse v2 API: instantiate a parser with the raw buffer, then extract text
-      const pdfData = new PDFParse({ data: buffer });
-      const result = await pdfData.getText();
+      // pdf-parse v1 API: callable, pure-Node pdfjs (no DOM globals — serverless-safe)
+      const result = await pdfParse(buffer);
       return result.text || 'Dummy PDF Text for Mock Testing';
     } else if (
       mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
