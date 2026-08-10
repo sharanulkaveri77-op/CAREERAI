@@ -1,3 +1,4 @@
+import { describe, expect, it } from '@jest/globals';
 import { cosineSimilarity, generateEmbedding } from '../embedding.service';
 
 describe('Embedding Service', () => {

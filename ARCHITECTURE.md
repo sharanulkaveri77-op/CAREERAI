@@ -8,7 +8,7 @@ CareerAI is a decoupled full-stack application built for production-readiness. T
 - **Client**: React + TypeScript + Vite, using TailwindCSS for styling and shadcn/ui for accessible UI components. Zustand is used for lightweight global state.
 - **Server**: Node.js + Express + TypeScript, implementing a Controller-Service-Route pattern.
 - **Database**: MongoDB (Mongoose).
-- **AI Core**: Anthropic Claude API for reasoning, mock interviews, and resume processing.
+- **AI Core**: Groq API (Llama 3.3 70B versatile for reasoning-heavy tasks, Llama 3.1 8B for fast lightweight calls) — OpenAI-compatible SDK, server-side only.
 - **Matching Core**: Xenova Transformers (or similar local/API vector store) paired with Cosine Similarity for intelligent job-to-resume matching.
 
 ## 2. Directory Structure
@@ -48,13 +48,13 @@ server/
 3. **Controller**: The controller receives the sanitized request, extracts the necessary payload, and passes it to the Service layer.
 4. **Service**: 
    - Queries the MongoDB database via Mongoose if historical data is needed.
-   - For AI workflows, the service crafts a specialized prompt and securely calls the Anthropic Claude API.
+   - For AI workflows, the service crafts a specialized prompt and securely calls the Groq API.
    - For matching workflows, the service converts text to embeddings and calculates cosine similarity scores.
 5. **Response**: The service returns the processed data back to the controller, which formats a standardized JSON response and sends it back to the client.
 6. **State Update**: The client receives the response, updates the Zustand store if necessary, and re-renders the UI with the new data.
 
 ## 4. Key Architectural Decisions
 
-- **Server-Side AI Only**: Under no circumstances are API keys (like Anthropic) exposed to the client. All generative AI tasks happen securely within the Node.js backend.
+- **Server-Side AI Only**: Under no circumstances are API keys (like Groq) exposed to the client. All generative AI tasks happen securely within the Node.js backend.
 - **Service Layer Abstraction**: Business logic is decoupled from Express controllers. This makes writing unit tests easier and allows services to be reused (e.g., calling the `MatchingService` from both the `JobController` and a cron job).
 - **Environment Parity**: `.env.example` files are strictly maintained to ensure seamless onboarding without leaking production secrets.

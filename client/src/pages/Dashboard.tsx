@@ -6,10 +6,8 @@ import { ResumeFeedback } from '../features/resume/ResumeFeedback';
 import { JobMatcher } from '../features/jobs/JobMatcher';
 import { RoadmapView } from '../features/roadmap/RoadmapView';
 import { InterviewSimulator } from '../features/interview/InterviewSimulator';
-import { InterviewHistory } from '../features/interview/InterviewHistory';
 import { AnalyticsDashboard } from '../features/analytics/AnalyticsDashboard';
 import { ErrorBoundary } from '../components/ErrorBoundary';
-import { SkeletonLoader } from '../components/SkeletonLoader';
 
 export const Dashboard = () => {
   const { user } = useAuthStore();
@@ -88,7 +86,7 @@ export const Dashboard = () => {
               </div>
               <h3 className="text-lg font-medium text-slate-900">No Resume Analyzed</h3>
               <p className="text-slate-500 mt-2 max-w-sm">
-                Upload your resume (PDF or DOCX) in the panel to the left to get deep AI feedback, scoring, and targeted rewrite suggestions powered by Claude.
+                Upload your resume (PDF or DOCX) in the panel to the left to get deep AI feedback, scoring, and targeted rewrite suggestions powered by Groq AI.
               </p>
             </div>
           )}

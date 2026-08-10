@@ -6,7 +6,6 @@ import { RoadmapMonthCard } from './RoadmapMonthCard';
 export const RoadmapView = () => {
   const [roadmap, setRoadmap] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
 
   const fetchRoadmap = async () => {
     setLoading(true);
@@ -15,7 +14,7 @@ export const RoadmapView = () => {
       setRoadmap(response.data.roadmap);
     } catch (err: any) {
       if (err.response?.status !== 404) {
-        setError(err.response?.data?.message || 'Failed to load roadmap');
+        console.warn('Failed to load roadmap:', err);
       }
     } finally {
       setLoading(false);

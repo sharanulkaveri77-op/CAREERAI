@@ -2,7 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../middlewares/auth';
 import InterviewSession, { IMessage } from '../models/InterviewSession';
 import User from '../models/User';
-import { evaluateInterviewAnswerWithClaude, getInitialInterviewQuestion } from '../services/ai.service';
+import { evaluateInterviewAnswerWithGroq, getInitialInterviewQuestion } from '../services/ai.service';
 
 export const startSession = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -44,6 +44,12 @@ export const sendMessage = async (req: AuthRequest, res: Response): Promise<void
     }
 
     const { sessionId } = req.params;
+
+    if (!sessionId) {
+      res.status(400).json({ message: 'Session ID is required' });
+      return;
+    }
+
     const { answer } = req.body;
 
     const session = await InterviewSession.findOne({ _id: sessionId, user: req.user.id });
@@ -65,7 +71,7 @@ export const sendMessage = async (req: AuthRequest, res: Response): Promise<void
       content: m.content
     }));
 
-    const result = await evaluateInterviewAnswerWithClaude(session.targetRole, chatHistory, answer);
+    const result = await evaluateInterviewAnswerWithGroq(session.targetRole, chatHistory, answer);
 
     const aiMessage: any = {
       role: 'system',
@@ -120,7 +126,7 @@ export const getSession = async (req: AuthRequest, res: Response): Promise<void>
       return;
     }
 
-    const session = await InterviewSession.findOne({ _id: req.params.sessionId, user: req.user.id });
+    const session = await InterviewSession.findOne({ _id: String(req.params.sessionId), user: req.user.id });
 
     if (!session) {
       res.status(404).json({ message: 'Session not found' });

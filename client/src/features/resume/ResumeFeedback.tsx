@@ -32,7 +32,7 @@ export const ResumeFeedback = ({ analysis }: ResumeFeedbackProps) => {
         
         {/* Score Gauge */}
         <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm col-span-1 flex flex-col items-center justify-center">
-          <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4">Claude AI Score</h3>
+          <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4">AI Score</h3>
           <div className="relative w-32 h-32">
             <svg className="w-full h-full transform -rotate-90" viewBox="0 0 120 120">
               <circle
@@ -133,7 +133,7 @@ export const ResumeFeedback = ({ analysis }: ResumeFeedbackProps) => {
                 </div>
                 <div>
                   <p className="text-[10px] font-bold tracking-wider text-amber-600 uppercase mb-2 flex items-center">
-                    Claude's Suggestion
+                    AI's Suggestion
                   </p>
                   <p className="text-sm text-slate-900 font-medium">{item.suggestion}</p>
                 </div>

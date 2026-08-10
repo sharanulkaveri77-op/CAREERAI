@@ -100,7 +100,7 @@ export const InterviewSimulator = ({ onClose }: { onClose: () => void }) => {
             </div>
             <div>
               <h2 className="text-lg font-bold text-slate-900">AI Mock Interview</h2>
-              <p className="text-sm text-slate-500">Claude-3 Technical Coach</p>
+              <p className="text-sm text-slate-500">Llama-3 Technical Coach</p>
             </div>
           </div>
           <button 

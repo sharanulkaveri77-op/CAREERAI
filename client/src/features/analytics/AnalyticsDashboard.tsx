@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import {
   AreaChart, Area, LineChart, Line, BarChart, Bar, RadialBarChart, RadialBar,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import { Loader2, TrendingUp, Award, Target, Rocket } from 'lucide-react';
 import api from '../../lib/axios';

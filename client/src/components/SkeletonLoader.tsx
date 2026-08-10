@@ -1,5 +1,3 @@
-import React from 'react';
-
 export const SkeletonLoader = ({ className = '', count = 1, type = 'text' }: { className?: string, count?: number, type?: 'text' | 'card' | 'chart' }) => {
   const renderSkeleton = (key: number) => {
     if (type === 'card') {

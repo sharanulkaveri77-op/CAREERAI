@@ -1,5 +1,24 @@
 import Groq from 'groq-sdk';
 
+/**
+ * AI Service Layer — Groq (OpenAI-compatible SDK)
+ * -----------------------------------------------
+ * All LLM work is server-side only: GROQ_API_KEY lives in server/.env and is
+ * never exposed to the frontend. The key is read once at module load; if it is
+ * missing we fall back to deterministic mock data so the app stays demoable.
+ *
+ * Model strategy (keeps us inside Groq's free-tier limits):
+ *  - REASONING_MODEL: heavy tasks (roadmap, interview feedback, resume rewrite)
+ *  - FAST_MODEL: lightweight tasks (opening interview question) — lower cost,
+ *    lower latency, frees the reasoning model quota for demo moments.
+ *
+ * Resilience:
+ *  - 429 rate-limit and transient 5xx responses are retried with exponential
+ *    backoff (Groq free tier is ~30 req/min, so bursts WILL hit 429s).
+ *  - Structured JSON responses are parsed defensively: code fences are
+ *    stripped, and a single regeneration is attempted on malformed output.
+ */
+
 let groq: Groq | null = null;
 if (process.env.GROQ_API_KEY) {
   groq = new Groq({
@@ -7,7 +26,84 @@ if (process.env.GROQ_API_KEY) {
   });
 }
 
-export interface ClaudeAnalysis {
+const REASONING_MODEL = 'llama-3.3-70b-versatile';
+const FAST_MODEL = 'llama-3.1-8b-instant';
+
+const MAX_RETRIES = 3;
+const BASE_RETRY_DELAY_MS = 500;
+const MAX_RETRY_DELAY_MS = 5000;
+
+/** 429 = rate limited; 5xx = transient server-side failures worth retrying. */
+const RETRYABLE_STATUS_CODES = new Set([429, 500, 502, 503, 504]);
+
+const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
+interface GroqChatParams {
+  model: string;
+  max_tokens: number;
+  temperature: number;
+  messages: Groq.Chat.Completions.ChatCompletionMessageParam[];
+}
+
+/**
+ * Wrapper around groq.chat.completions.create that retries rate-limit (429)
+ * and transient server errors using capped exponential backoff. Because the
+ * free tier throttles at ~30 req/min, concurrent demo requests will hit 429 —
+ * this makes those self-healing instead of surfacing 500s to the UI.
+ */
+const createChatCompletion = async (params: GroqChatParams): Promise<string> => {
+  if (!groq) {
+    throw new Error('Groq client not initialized (missing GROQ_API_KEY)');
+  }
+
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const response = await groq.chat.completions.create(params);
+      return response.choices?.[0]?.message?.content || '';
+    } catch (error: any) {
+      const status = error?.status;
+      // Undefined status = network error; also retry those (they're transient)
+      const isRateLimited = (error?.error?.type ?? '').includes('rate_limit');
+      const isRetryable = status === undefined || RETRYABLE_STATUS_CODES.has(status) || isRateLimited;
+
+      if (!isRetryable || attempt >= MAX_RETRIES) {
+        throw error;
+      }
+
+      const backoffMs = Math.min(MAX_RETRY_DELAY_MS, BASE_RETRY_DELAY_MS * 2 ** attempt);
+      console.warn(
+        `Groq call failed (attempt ${attempt + 1}/${MAX_RETRIES}, status=${status ?? 'network'}). Retrying in ${backoffMs}ms.`
+      );
+      await delay(backoffMs);
+    }
+  }
+};
+
+/** Strips markdown code fences in case the model wraps its JSON answer. */
+const extractJson = (rawText: string): string => {
+  const match = rawText.trim().match(/^```(?:json)?\s*([\s\S]*?)```$/);
+  return match?.[1]?.trim() || rawText.trim();
+};
+
+/**
+ * LLMs occasionally emit a truncated or verbosely-prefixed JSON blob. We parse
+ * strictly; on failure we regenerate the response ONCE (models rarely fail
+ * twice) before surfacing a clean error to the caller.
+ */
+const parseStructuredJson = async <T>(rawText: string, regenerate: () => Promise<string>): Promise<T> => {
+  try {
+    return JSON.parse(extractJson(rawText)) as T;
+  } catch {
+    console.warn('Groq returned malformed JSON; regenerating once.');
+    const retryText = await regenerate();
+    return JSON.parse(extractJson(retryText)) as T;
+  }
+};
+
+const isObject = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+export interface GroqAnalysis {
   overallScore: number;
   detectedSkills: string[];
   sectionFeedback: Array<{
@@ -21,10 +117,10 @@ export interface ClaudeAnalysis {
   }>;
 }
 
-export const analyzeResumeWithClaude = async (resumeText: string): Promise<ClaudeAnalysis> => {
+export const analyzeResumeWithGroq = async (resumeText: string): Promise<GroqAnalysis> => {
   if (!groq) {
     console.log('No GROQ_API_KEY found. Returning mock analysis.');
-    return generateMockClaudeAnalysis();
+    return generateMockGroqAnalysis();
   }
 
   const prompt = `
@@ -54,28 +150,29 @@ export const analyzeResumeWithClaude = async (resumeText: string): Promise<Claud
     ${resumeText.substring(0, 10000)}
   `;
 
-  try {
-    const response = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+  const buildCall = () =>
+    createChatCompletion({
+      model: REASONING_MODEL,
       max_tokens: 1500,
       temperature: 0,
-      messages: [{ role: "user", content: prompt }]
+      messages: [{ role: 'user', content: prompt }],
     });
 
-    const rawText = response.choices[0]?.message?.content || "";
+  const analysis = await parseStructuredJson<unknown>(await buildCall(), buildCall);
 
-    // Clean up potential markdown formatting from the AI response
-    const cleanJsonText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-    const parsedData = JSON.parse(cleanJsonText);
-
-    return parsedData as ClaudeAnalysis;
-  } catch (error) {
-    console.error('Groq API failed:', error);
-    throw new Error('Failed to analyze resume with AI');
+  // Light structural validation — protects the DB and client from malformed output
+  if (
+    !isObject(analysis) ||
+    typeof analysis.overallScore !== 'number' ||
+    !Array.isArray(analysis.detectedSkills)
+  ) {
+    throw new Error('AI returned an unexpected response shape for resume analysis');
   }
+
+  return analysis as unknown as GroqAnalysis;
 };
 
-const generateMockClaudeAnalysis = (): ClaudeAnalysis => {
+const generateMockGroqAnalysis = (): GroqAnalysis => {
   return {
     overallScore: 78,
     detectedSkills: ['JavaScript', 'React.js', 'Node.js', 'MongoDB', 'REST APIs', 'Agile Methodology'],
@@ -104,7 +201,7 @@ const generateMockClaudeAnalysis = (): ClaudeAnalysis => {
   };
 };
 
-export interface ClaudeRoadmapMonth {
+export interface GroqRoadmapMonth {
   monthNumber: number;
   focusArea: string;
   estimatedHours: number;
@@ -114,7 +211,7 @@ export interface ClaudeRoadmapMonth {
   tasks: Array<{ description: string }>;
 }
 
-export const generateRoadmapWithClaude = async (targetRole: string, missingSkills: string[]): Promise<ClaudeRoadmapMonth[]> => {
+export const generateRoadmapWithGroq = async (targetRole: string, missingSkills: string[]): Promise<GroqRoadmapMonth[]> => {
   if (!groq) {
     console.log('No GROQ_API_KEY found. Returning mock roadmap.');
     return generateMockRoadmap(targetRole, missingSkills);
@@ -147,24 +244,24 @@ export const generateRoadmapWithClaude = async (targetRole: string, missingSkill
     ]
   `;
 
-  try {
-    const response = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+  const buildCall = () =>
+    createChatCompletion({
+      model: REASONING_MODEL,
       max_tokens: 2000,
       temperature: 0.2,
-      messages: [{ role: "user", content: prompt }]
+      messages: [{ role: 'user', content: prompt }],
     });
 
-    const rawText = response.choices[0]?.message?.content || "";
-    const cleanJsonText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-    return JSON.parse(cleanJsonText) as ClaudeRoadmapMonth[];
-  } catch (error) {
-    console.error('Groq API failed:', error);
-    throw new Error('Failed to generate roadmap with AI');
+  const roadmap = await parseStructuredJson<unknown>(await buildCall(), buildCall);
+
+  if (!Array.isArray(roadmap) || roadmap.length === 0) {
+    throw new Error('AI returned an unexpected response shape for roadmap generation');
   }
+
+  return roadmap as GroqRoadmapMonth[];
 };
 
-const generateMockRoadmap = (targetRole: string, missingSkills: string[]): ClaudeRoadmapMonth[] => {
+const generateMockRoadmap = (targetRole: string, missingSkills: string[]): GroqRoadmapMonth[] => {
   // If there are no missing skills or just 1, we still generate a robust 3-month plan
   const primarySkill = missingSkills.length > 0 ? missingSkills[0] : 'Core Technologies';
   const secondarySkill = missingSkills.length > 1 ? missingSkills[1] : 'Advanced Architecture';
@@ -242,7 +339,7 @@ const generateMockRoadmap = (targetRole: string, missingSkills: string[]): Claud
   ];
 };
 
-export interface ClaudeInterviewEvaluation {
+export interface GroqInterviewEvaluation {
   evaluation: {
     strengths: string;
     improvements: string;
@@ -253,12 +350,11 @@ export interface ClaudeInterviewEvaluation {
   isOver: boolean;
 }
 
-export const evaluateInterviewAnswerWithClaude = async (
-  targetRole: string, 
-  chatHistory: Array<{ role: string, content: string }>, 
+export const evaluateInterviewAnswerWithGroq = async (
+  targetRole: string,
+  chatHistory: Array<{ role: string, content: string }>,
   latestAnswer: string
-): Promise<ClaudeInterviewEvaluation> => {
-  
+): Promise<GroqInterviewEvaluation> => {
   if (!groq) {
     console.log('No GROQ_API_KEY found. Returning mock Interview Evaluation.');
     return generateMockInterviewEvaluation(targetRole, chatHistory, latestAnswer);
@@ -292,37 +388,39 @@ export const evaluateInterviewAnswerWithClaude = async (
     }
   `;
 
-  try {
-    const response = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+  const buildCall = () =>
+    createChatCompletion({
+      model: REASONING_MODEL,
       max_tokens: 1500,
       temperature: 0.2,
-      messages: [{ role: "user", content: prompt }]
+      messages: [{ role: 'user', content: prompt }],
     });
 
-    const rawText = response.choices[0]?.message?.content || "";
-    const cleanJsonText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-    return JSON.parse(cleanJsonText) as ClaudeInterviewEvaluation;
-  } catch (error) {
-    console.error('Groq API failed:', error);
-    throw new Error('Failed to evaluate interview answer with AI');
+  const evaluation = await parseStructuredJson<unknown>(await buildCall(), buildCall);
+
+  if (!isObject(evaluation) || !isObject(evaluation.evaluation) || typeof evaluation.isOver !== 'boolean') {
+    throw new Error('AI returned an unexpected response shape for interview evaluation');
   }
+
+  return evaluation as unknown as GroqInterviewEvaluation;
 };
 
 const generateMockInterviewEvaluation = (
-  targetRole: string, 
-  chatHistory: Array<{ role: string, content: string }>, 
+  targetRole: string,
+  chatHistory: Array<{ role: string, content: string }>,
   latestAnswer: string
-): ClaudeInterviewEvaluation => {
+): GroqInterviewEvaluation => {
   const answerCount = chatHistory.filter(m => m.role === 'user').length + 1;
   const isOver = answerCount >= 3;
 
   const score = latestAnswer.length > 50 ? 85 : 45;
 
-  const questions = [
+  const endingQuestion = 'Thank you! The interview is complete.';
+
+  const questions: [string, string, string] = [
     `Can you explain how you would design a scalable backend for a high-traffic e-commerce site as a ${targetRole}?`,
     `Describe a time you had to debug a complex race condition. How did you handle it?`,
-    `Thank you! The interview is complete.` // End
+    endingQuestion
   ];
 
   return {
@@ -332,7 +430,8 @@ const generateMockInterviewEvaluation = (
       modelAnswer: `A strong answer would be: "I would use a microservices architecture with a load balancer, caching layer (Redis), and a message queue (RabbitMQ) to handle traffic spikes smoothly."`,
       score
     },
-    nextQuestion: isOver ? questions[2] : questions[answerCount],
+    // Safe fallback guards the out-of-range index (noUncheckedIndexedAccess)
+    nextQuestion: isOver ? endingQuestion : (questions[answerCount] ?? `Walk me through your motivation for becoming a ${targetRole}.`),
     isOver
   };
 };
@@ -343,16 +442,17 @@ export const getInitialInterviewQuestion = async (targetRole: string): Promise<s
   }
 
   const prompt = `You are interviewing a candidate for a "${targetRole}" role. Ask them a strong, open-ended introductory technical question to start the interview. Return ONLY the string question, no JSON, no quotes.`;
-  
+
   try {
-    const response = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+    // Lightweight task: fast model keeps this snappy and preserves reasoning-model quota
+    return await createChatCompletion({
+      model: FAST_MODEL,
       max_tokens: 500,
       temperature: 0.5,
-      messages: [{ role: "user", content: prompt }]
-    });
-    return response.choices[0]?.message?.content || `Can you describe your experience and why you are a good fit for the ${targetRole} role?`;
+      messages: [{ role: 'user', content: prompt }],
+    }) || `Can you describe your experience and why you are a good fit for the ${targetRole} role?`;
   } catch (error) {
+    console.warn('Failed to generate initial interview question:', error);
     return `Can you describe your experience and why you are a good fit for the ${targetRole} role?`;
   }
 };

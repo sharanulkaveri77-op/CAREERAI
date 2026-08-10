@@ -35,8 +35,8 @@ export const getDashboardAnalytics = async (req: AuthRequest, res: Response): Pr
     resumeAnalyses.forEach(analysis => {
       resumeTrend.push({
         date: new Date(analysis.createdAt).toLocaleDateString(),
-        score: analysis.score,
-        skillsCount: analysis.skillsDetected.length
+        score: analysis.overallScore,
+        skillsCount: analysis.detectedSkills.length
       });
     });
 
@@ -65,18 +65,20 @@ export const getDashboardAnalytics = async (req: AuthRequest, res: Response): Pr
     if (roadmaps.length > 0) {
       // Find the most recent roadmap
       const latestRoadmap = roadmaps[roadmaps.length - 1];
-      
-      let totalTasks = 0;
-      let completedTasks = 0;
-      
-      latestRoadmap.months.forEach(month => {
-        month.tasks.forEach(task => {
-          totalTasks++;
-          if (task.completed) completedTasks++;
-        });
-      });
 
-      roadmapCompletion = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+      if (latestRoadmap) {
+        let totalTasks = 0;
+        let completedTasks = 0;
+
+        latestRoadmap.months.forEach(month => {
+          month.tasks.forEach(task => {
+            totalTasks++;
+            if (task.isCompleted) completedTasks++;
+          });
+        });
+
+        roadmapCompletion = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+      }
     } else {
       roadmapCompletion = 35; // Mock progress for empty state
     }

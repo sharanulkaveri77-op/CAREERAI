@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middlewares/auth';
 import { parseResumeBuffer } from '../services/parser.service';
-import { analyzeResumeWithClaude } from '../services/ai.service';
+import { analyzeResumeWithGroq } from '../services/ai.service';
 import ResumeAnalysis from '../models/ResumeAnalysis';
 import User from '../models/User';
 
@@ -20,8 +20,8 @@ export const analyzeResume = async (req: AuthRequest, res: Response): Promise<vo
       return;
     }
 
-    // 2. Call Claude API with structured prompt
-    const aiAnalysis = await analyzeResumeWithClaude(resumeText);
+    // 2. Call Groq API with structured prompt
+    const aiAnalysis = await analyzeResumeWithGroq(resumeText);
 
     // 3. Store results in the DB tied to the user
     const savedAnalysis = await ResumeAnalysis.create({

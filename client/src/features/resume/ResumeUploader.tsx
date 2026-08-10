@@ -101,10 +101,10 @@ export const ResumeUploader = ({ onAnalysisComplete }: ResumeUploaderProps) => {
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Claude AI is Analyzing...
+                AI is Analyzing...
               </>
             ) : (
-              'Analyze with Claude AI'
+              'Analyze with AI'
             )}
           </button>
         </div>

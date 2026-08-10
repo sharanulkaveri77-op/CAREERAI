@@ -1,10 +1,7 @@
+import 'dotenv/config';
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import dotenv from 'dotenv';
-
-// Load environment variables early
-dotenv.config();
 
 import { connectDB } from './config/db';
 import authRoutes from './routes/auth.routes';

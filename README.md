@@ -7,21 +7,21 @@ CareerAI is an intelligent, AI-powered career coaching platform that helps job s
 ## Features
 - **Resume Parsing & Scoring**: Upload your PDF/DOCX resume and get an instant ATS-style score.
 - **Smart Job Matching**: Uses vector embeddings and Cosine Similarity to find the best fit among seed job listings.
-- **AI Career Roadmaps**: Generates a month-by-month study plan based on your missing skills using the Claude AI API.
-- **Mock Interview Simulator**: A chat-based interview room where Claude acts as a technical recruiter, scoring your answers in real-time.
+- **AI Career Roadmaps**: Generates a month-by-month study plan based on your missing skills using the Groq AI API.
+- **Mock Interview Simulator**: A chat-based interview room where AI acts as a technical recruiter, scoring your answers in real-time.
 - **Premium Analytics**: Recharts-powered dashboard tracking your growth.
 
 ## Architecture
 - **Frontend**: React, TypeScript, Vite, Tailwind CSS, Zustand, Recharts, Lucide Icons.
 - **Backend**: Node.js, Express, TypeScript, MongoDB (Mongoose), JWT Auth.
-- **AI**: Anthropic API (Claude 3 Haiku).
+- **AI**: Groq API (Llama 3.3 70B for reasoning, Llama 3.1 8B for fast lightweight calls).
 
 ## Local Setup
 
 ### Prerequisites
 - Node.js v18+
 - MongoDB (Local or Atlas) - *Optional: App falls back to in-memory DB if no URI is provided.*
-- Anthropic API Key - *Optional: App falls back to Mock logic if no key is provided.*
+- Groq API Key - *Optional: App falls back to Mock logic if no key is provided.*
 
 ### Installation
 
@@ -38,7 +38,7 @@ CareerAI is an intelligent, AI-powered career coaching platform that helps job s
    PORT=5000
    MONGODB_URI=your_mongodb_connection_string
    JWT_SECRET=your_jwt_secret
-   ANTHROPIC_API_KEY=your_claude_api_key
+   GROQ_API_KEY=your_groq_api_key
    ```
 
 4. Run the development servers:

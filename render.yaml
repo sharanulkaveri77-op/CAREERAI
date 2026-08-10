@@ -14,5 +14,5 @@ services:
         sync: false
       - key: JWT_SECRET
         sync: false
-      - key: ANTHROPIC_API_KEY
+      - key: GROQ_API_KEY
         sync: false

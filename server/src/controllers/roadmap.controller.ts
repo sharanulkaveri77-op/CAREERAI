@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middlewares/auth';
 import Roadmap from '../models/Roadmap';
-import { generateRoadmapWithClaude } from '../services/ai.service';
+import { generateRoadmapWithGroq } from '../services/ai.service';
 
 export const generateRoadmap = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -18,7 +18,7 @@ export const generateRoadmap = async (req: AuthRequest, res: Response): Promise<
     }
 
     // Call the AI service
-    const monthPlans = await generateRoadmapWithClaude(targetRole, missingSkills);
+    const monthPlans = await generateRoadmapWithGroq(targetRole, missingSkills);
 
     // Ensure months have task objects with isCompleted: false by default
     const formattedMonths = monthPlans.map(month => ({
