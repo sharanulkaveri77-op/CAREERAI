@@ -13,6 +13,8 @@ export interface IResumeAnalysis extends Document {
     suggestion: string;
     reason: string;
   }>;
+  /** Raw extracted resume text — stored so ATS/skills modules can re-analyze without re-uploading */
+  resumeText: string;
   createdAt: Date;
 }
 
@@ -43,6 +45,7 @@ const resumeAnalysisSchema = new Schema<IResumeAnalysis>(
         reason: { type: String, required: true },
       },
     ],
+    resumeText: { type: String, default: '' },
   },
   { timestamps: true }
 );

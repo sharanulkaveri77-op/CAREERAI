@@ -436,6 +436,46 @@ const generateMockInterviewEvaluation = (
   };
 };
 
+/**
+ * Lightweight keyword/skill extraction (ATS module, Phase B).
+ * Runs on the fast model deliberately: it's a high-frequency, low-stakes call
+ * and must not consume the reasoning model's rate-limit budget.
+ * Returns null when no API key is present so the caller can fall back to its
+ * deterministic rule-based extractor.
+ */
+export const extractKeywordsWithGroq = async (text: string): Promise<string[] | null> => {
+  if (!groq) {
+    console.log('No GROQ_API_KEY found. Returning null for keyword extraction.');
+    return null;
+  }
+
+  const prompt = `
+    From the following text, extract the top 25 most relevant technical skills,
+    tools, technologies, and professional keywords. Return ONLY a valid JSON array
+    of strings like ["JavaScript", "Node.js", "AWS"]. No markdown, no extra text.
+    Prefer single concepts; skip generic filler words.
+
+    Text:
+    ${text.substring(0, 8000)}
+  `;
+
+  const buildCall = () =>
+    createChatCompletion({
+      model: FAST_MODEL,
+      max_tokens: 400,
+      temperature: 0,
+      messages: [{ role: 'user', content: prompt }],
+    });
+
+  const result = await parseStructuredJson<unknown>(await buildCall(), buildCall);
+
+  if (!Array.isArray(result)) {
+    throw new Error('AI returned an unexpected response shape for keyword extraction');
+  }
+
+  return result.filter((item): item is string => typeof item === 'string').slice(0, 30);
+};
+
 export const getInitialInterviewQuestion = async (targetRole: string): Promise<string> => {
   if (!groq) {
     return `Welcome to your mock interview for the ${targetRole} position! Let's start with a foundational question: Can you describe your experience with the core technologies used in this role and how you keep your skills up to date?`;

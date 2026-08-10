@@ -29,3 +29,20 @@ The AI migration preserved the `ClaudeAnalysis`/`RoadmapMonth`/`InterviewEvaluat
 
 ### D8: Serve-then-validate AI JSON
 Rather than blindly trusting Llama's JSON, every structured call now passes through `extractJson` (fence stripping) → strict parse → single regeneration → light shape validation before anything touches Mongo or the UI. This prevents both corrupted DB rows and confusing 500s on the demo.
+
+## Phase B decisions
+
+### D9: Deterministic rules for objective checks, LLM only for semantics
+ATS structure checks (sections, contact info, tables, length) are pure rule-based functions with 24 jest tests — because "was there a table?" is a factual question where an LLM can hallucinate. The ONLY AI step is keyword extraction from the JD (fast model). This separation is the answer to "why didn't you just ask the LLM for a score?" — reproducible, testable, zero-cost, and defensible in interviews.
+
+### D10: One LLM call per ATS run, not three
+Extract keywords from the JD once (fast model), then match them against the resume text with deterministic word-boundary regexes. Extracting from BOTH texts would double the cost and rate-limit risk without improving accuracy. Rate-limit budget stays in reserve for roadmap/interview demos.
+
+### D11: Word-boundary matching with special-case fallback
+Pure-alphanumeric keywords get `\b` boundaries ("excel" ≠ "excellent"); special-char keywords (C++, .NET, node.js, C#) fall back to substring matching where boundaries are unreliable ("C#" with \b would never match "C#"). Small detail, big difference in match accuracy.
+
+### D12: Weights normalize when no JD is provided
+The keyword check (50 pts) only exists when a JD is pasted. Score = earned/available×100 keeps structural-only runs on the same 0–100 scale — no "what does 78 without a JD mean" confusion in demos.
+
+### D13: Persist resumeText once, reanalyze many times
+`ResumeAnalysis.resumeText` (cap 20k) means ATS (and later: placement analytics, PDF export) can re-run against the stored text without asking the user to re-upload. Costs ~20KB/document in MongoDB — a fair trade for the UI flow.

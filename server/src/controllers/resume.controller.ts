@@ -30,6 +30,9 @@ export const analyzeResume = async (req: AuthRequest, res: Response): Promise<vo
       detectedSkills: aiAnalysis.detectedSkills,
       sectionFeedback: aiAnalysis.sectionFeedback,
       bulletRewrites: aiAnalysis.bulletRewrites,
+      // Keep the raw text so the ATS checker and later modules can re-analyze
+      // without forcing the user to re-upload
+      resumeText: resumeText.substring(0, 20000),
     });
 
     // 4. Update the user's currentSkills as an added bonus

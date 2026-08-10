@@ -34,8 +34,33 @@ Phase-by-phase record of what has been built, what was assumed, and what needs m
 4. Mock interview: start session → question appears; answer 3 times → completion with average score.
 5. Job matcher still returns matches (embeddings unaffected by this phase).
 
+## Phase B — ATS Compatibility Checker (COMPLETE)
+
+### Built
+- **`server/src/services/ats.service.ts`** — deterministic, unit-tested rule engine:
+  - Section-header detection (Experience/Education/Skills, weighted 20 pts)
+  - Contact info (email 6, phone 5, LinkedIn/GitHub 4 = 15 pts)
+  - Table/column layout heuristics (tab-separated rows, "|" separators, wide column alignment — indentation excluded to avoid bullet-list false positives, 12 pts)
+  - Length sanity floor (150 words, 3 pts)
+  - Keyword matching vs job posting (50 pts, scaled by match rate) with word-boundary regexes (so `excel` never matches `excellent`) and special-char fallbacks for `C++`/`.NET`/`node.js`
+  - Score normalizes to earned/available when no JD is supplied (structural-only run)
+- **`extractKeywordsWithGroq`** in ai.service.ts — fast model (`llama-3.1-8b-instant`), strict JSON array, reuses the retry + regenerate-on-malformed pipeline; returns `null` without a key so the caller can fall back to `extractKeywordsRuleBased` (offline deterministic splitter).
+- Controller + route `POST /api/resume/ats` (protected); `resumeText` now persisted with each analysis (`ResumeAnalysis.resumeText`, capped 20k chars) so ATS runs without re-uploading.
+- **`client/src/features/resume/ATSReport.tsx`** — score dial, pass/warn/fail checklist, matched/missing keyword chips, JD textarea + re-run button; wired under ResumeFeedback on the Dashboard; friendly 404 state when no resume exists yet.
+- **24 jest tests** passing (2 suites): section/contact/layout/length rules, keyword normalization + boundary matching, full-report scoring bounds.
+
+### Assumptions
+- "ATS compatibility" = rule-based heuristics (clearly labeled in UI); real ATS systems are commercial/opaque, so the module demonstrates the *thinking* behind them.
+- Stored resumeText is capped at 20k chars to avoid bloating MongoDB.
+- Existing DB rows created before Phase B lack `resumeText` — the API returns a clear "re-upload" message (no data migration needed for a dev-stage app).
+
+### Manual test checklist
+1. Analyze a resume → scroll to ATS card → structural score appears (~90+ for a good resume).
+2. Paste a JD with keywords the resume lacks → "Missing from Resume" chips appear; score drops as keyword coverage drops.
+3. Without a key… (no longer applicable — key is now set) rules still work via rule-based extraction.
+4. Check the checklist details text — they are candidate-facing advice, usable in the demo.
+
 ## Next phases
-- **Phase B**: ATS Compatibility Checker (rule-based structural checks + Llama 8B keyword extraction).
 - **Phase C**: Application Tracker Kanban board (@dnd-kit) tied to job matches.
 - **Phase D**: Gamified progress (streaks, XP, badges).
 - **Phase E**: PDF export (resume report + roadmap).

@@ -3,6 +3,7 @@ import { useAuthStore } from '../store/useAuthStore';
 import { Briefcase, Target, Award, Play } from 'lucide-react';
 import { ResumeUploader } from '../features/resume/ResumeUploader';
 import { ResumeFeedback } from '../features/resume/ResumeFeedback';
+import { ATSReport } from '../features/resume/ATSReport';
 import { JobMatcher } from '../features/jobs/JobMatcher';
 import { RoadmapView } from '../features/roadmap/RoadmapView';
 import { InterviewSimulator } from '../features/interview/InterviewSimulator';
@@ -78,7 +79,10 @@ export const Dashboard = () => {
         
         <div className="lg:col-span-2">
           {analysis ? (
-            <ResumeFeedback analysis={analysis} />
+            <div className="space-y-8">
+              <ResumeFeedback analysis={analysis} />
+              <ATSReport />
+            </div>
           ) : (
             <div className="bg-white rounded-xl border border-dashed border-slate-300 p-6 shadow-sm h-full flex flex-col items-center justify-center text-center min-h-[500px]">
               <div className="bg-slate-50 p-4 rounded-full mb-4">
