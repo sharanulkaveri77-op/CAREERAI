@@ -74,3 +74,14 @@ Every badge is a pure function of `{counts, xp, streak, meta}` evaluated on ever
 
 ### D21: Display names vs logic ids
 Badge names are human-readable ("Stargazer", "Unstoppable") so the shelf reads like a game, while `id`s drive logic. XP is deliberately small (10-50) vs level costs (150+ per level) so early progress feels fast.
+
+## Phase E decisions
+
+### D22: Server-side PDFs (pdfkit), not a client library
+One source of truth renders both PDFs, the ATS structure score inside the report costs zero AI tokens, and nothing new ships to the browser. Client work is a two-button panel.
+
+### D23: Resume report includes a freshly computed ATS score
+`resumeText` (D13) pays off — the PDF embeds a rule-based ATS audit at export time, so the report is a complete snapshot without requiring the user to re-upload.
+
+### D24: Keep exports deterministic
+No AI calls in the export path; only stored data + rule-based checks. Exporting is fast, offline-safe and never blocked by a Groq outage.

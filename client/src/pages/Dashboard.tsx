@@ -10,6 +10,7 @@ import { InterviewSimulator } from '../features/interview/InterviewSimulator';
 import { ApplicationTracker } from '../features/applications/ApplicationTracker';
 import { AnalyticsDashboard } from '../features/analytics/AnalyticsDashboard';
 import { GamificationCard } from '../features/gamification/GamificationCard';
+import { ExportPanel } from '../features/export/ExportPanel';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 
 export const Dashboard = () => {
@@ -108,6 +109,8 @@ export const Dashboard = () => {
       <div className="pt-8 border-t border-slate-200">
         <ApplicationTracker />
       </div>
+
+      <ExportPanel />
     </div>
   );
 };

@@ -101,6 +101,24 @@ Phase-by-phase record of what has been built, what was assumed, and what needs m
 4. Generate roadmap → +50 ("Stargazer"); complete a mock interview → +40 ("Interview Ready").
 5. Live reload of the card: verify badge shelf updates without an F5.
 
+## Phase E — PDF Export (COMPLETE)
+
+### Built
+- **`pdfkit`** (server-side, no client libs) + **`export.service.ts`** — two deterministic PDF builders:
+  - **Resume Report**: dark CareerAI header, overall score bar (color-coded), rule-based **ATS structure score** (reuses `buildAtsReport` on the stored `resumeText`, zero AI calls), detected skills chips, per-section feedback, and original → rewrite → reason triples.
+  - **Career Roadmap**: progress bar, per-month focus area with hours + task completion, topics/projects/resources lists, ☐/✓ task checkboxes, multi-page footers with page numbers.
+- **`GET /api/export/resume-report`** and **`GET /api/export/roadmap`** (auth protected) → `application/pdf` attachments.
+- **`ExportPanel`** on the dashboard — two download buttons, friendly 404 messaging ("analyze a resume / generate a roadmap first"), blob download via `URL.createObjectURL`.
+
+### Verified
+- Server `tsc` + 24 Jest tests green; client `tsc` + build green.
+- Runtime smoke: server boots (tmp in-memory Mongo when no URI), `/api/health` OK, `/api/export/roadmap` returns 401 without a token (route + middleware wired).
+
+### Manual test checklist
+1. Analyze a resume → Download "Resume Report" → opens a valid multi-page PDF.
+2. Generate a roadmap → Download "Career Roadmap" → checkboxes reflect completed tasks.
+3. Fresh account → both buttons show the "nothing to export yet" message.
+
 ## Next phases
 - **Phase D**: Gamified progress (streaks, XP, badges).
 - **Phase E**: PDF export (resume report + roadmap).

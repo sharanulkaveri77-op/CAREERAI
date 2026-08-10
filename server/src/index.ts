@@ -12,6 +12,7 @@ import interviewRoutes from './routes/interview.routes';
 import analyticsRoutes from './routes/analytics.routes';
 import applicationsRoutes from './routes/applications.routes';
 import gamificationRoutes from './routes/gamification.routes';
+import exportRoutes from './routes/export.routes';
 
 // Connect to MongoDB
 connectDB();
@@ -33,6 +34,7 @@ app.use('/api/interview', interviewRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/applications', applicationsRoutes);
 app.use('/api/gamification', gamificationRoutes);
+app.use('/api/export', exportRoutes);
 
 // Basic health-check route
 app.get('/api/health', (req: Request, res: Response) => {
