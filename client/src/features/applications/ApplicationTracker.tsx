@@ -141,6 +141,7 @@ export const ApplicationTracker = () => {
     try {
       await api.post('/applications', payload);
       await fetchApplications();
+      window.dispatchEvent(new Event('gamification-updated'));
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to add application');
     }
@@ -178,6 +179,7 @@ export const ApplicationTracker = () => {
 
     api
       .patch(`/applications/${app._id}`, { status: targetStatus, position: targetCount })
+      .then(() => window.dispatchEvent(new Event('gamification-updated')))
       .catch(() => {
         setApplications(previous);
         setError('Failed to move application — check your connection.');

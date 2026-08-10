@@ -9,6 +9,7 @@ import { RoadmapView } from '../features/roadmap/RoadmapView';
 import { InterviewSimulator } from '../features/interview/InterviewSimulator';
 import { ApplicationTracker } from '../features/applications/ApplicationTracker';
 import { AnalyticsDashboard } from '../features/analytics/AnalyticsDashboard';
+import { GamificationCard } from '../features/gamification/GamificationCard';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 
 export const Dashboard = () => {
@@ -68,6 +69,8 @@ export const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      <GamificationCard />
 
       <div className="pt-4 border-t border-slate-200">
         <RoadmapView />

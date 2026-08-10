@@ -60,3 +60,17 @@ When adding a matched job, title/company are loaded server-side from the Job doc
 
 ### D17: No @dnd-kit/sortable (yet)
 Column-to-column drags via `@dnd-kit/core` cover the master-prompt requirement; in-column sorting is deferred. `position` is still persisted so adding sortable later is a UI-only change.
+
+## Phase D decisions
+
+### D18: Gamification is a server-side projection, never a client-side count
+All XP/streak/badge math lives in one service; the UI only renders snapshots. No client can fake a level, and a refresh is always truthful.
+
+### D19: Fire-and-forget award calls
+`void awardXp(...).catch(() => {})` — a gamification DB failure must never return 500 on a resume upload. Core flows stay correct even if the bonus layer breaks.
+
+### D20: Deterministic badge checks instead of "unlocks" a user might miss
+Every badge is a pure function of `{counts, xp, streak, meta}` evaluated on every award — badges earn retroactively (e.g. roadmap #5 grants Pathfinder even if the UI never showed Stargazer's progress).
+
+### D21: Display names vs logic ids
+Badge names are human-readable ("Stargazer", "Unstoppable") so the shelf reads like a game, while `id`s drive logic. XP is deliberately small (10-50) vs level costs (150+ per level) so early progress feels fast.

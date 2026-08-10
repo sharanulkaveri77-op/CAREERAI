@@ -4,6 +4,7 @@ import { parseResumeBuffer } from '../services/parser.service';
 import { analyzeResumeWithGroq } from '../services/ai.service';
 import ResumeAnalysis from '../models/ResumeAnalysis';
 import User from '../models/User';
+import { awardXp } from '../services/gamification.service';
 
 export const analyzeResume = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -22,6 +23,13 @@ export const analyzeResume = async (req: AuthRequest, res: Response): Promise<vo
 
     // 2. Call Groq API with structured prompt
     const aiAnalysis = await analyzeResumeWithGroq(resumeText);
+
+    if (!aiAnalysis) {
+      res.status(400).json({ message: 'AI analysis failed' });
+      return;
+    }
+
+    void awardXp(req.user.id, 'RESUME_ANALYZED').catch(() => {});
 
     // 3. Store results in the DB tied to the user
     const savedAnalysis = await ResumeAnalysis.create({

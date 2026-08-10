@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../middlewares/auth';
 import Roadmap from '../models/Roadmap';
 import { generateRoadmapWithGroq } from '../services/ai.service';
+import { awardXp } from '../services/gamification.service';
 
 export const generateRoadmap = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -39,6 +40,8 @@ export const generateRoadmap = async (req: AuthRequest, res: Response): Promise<
       overallProgress: 0,
       months: formattedMonths
     });
+
+    void awardXp(req.user.id, 'ROADMAP_GENERATED').catch(() => {});
 
     res.status(200).json({
       message: 'Roadmap generated successfully',

@@ -3,6 +3,7 @@ import { AuthRequest } from '../middlewares/auth';
 import ResumeAnalysis from '../models/ResumeAnalysis';
 import { buildAtsReport, extractKeywordsRuleBased } from '../services/ats.service';
 import { extractKeywordsWithGroq } from '../services/ai.service';
+import { awardXp } from '../services/gamification.service';
 
 /**
  * POST /api/resume/ats
@@ -39,6 +40,9 @@ export const runAtsCheck = async (req: AuthRequest, res: Response): Promise<void
       : [];
 
     const report = buildAtsReport(analysis.resumeText, targetKeywords);
+
+    void awardXp(req.user.id, 'ATS_CHECKED', { atsScore: report.score }).catch(() => {});
+
     res.status(200).json({ report });
   } catch (error) {
     console.error('ATS check error:', error);

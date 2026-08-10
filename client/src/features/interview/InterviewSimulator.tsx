@@ -66,6 +66,7 @@ export const InterviewSimulator = ({ onClose }: { onClose: () => void }) => {
       if (updatedSession.status === 'COMPLETED') {
         setIsOver(true);
         setAverageScore(updatedSession.averageScore);
+        window.dispatchEvent(new Event('gamification-updated'));
       }
     } catch (error) {
       console.error('Failed to send message', error);

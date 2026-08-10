@@ -3,6 +3,7 @@ import { AuthRequest } from '../middlewares/auth';
 import InterviewSession, { IMessage } from '../models/InterviewSession';
 import User from '../models/User';
 import { evaluateInterviewAnswerWithGroq, getInitialInterviewQuestion } from '../services/ai.service';
+import { awardXp } from '../services/gamification.service';
 
 export const startSession = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -83,6 +84,7 @@ export const sendMessage = async (req: AuthRequest, res: Response): Promise<void
 
     if (result.isOver) {
       session.status = 'COMPLETED';
+      void awardXp(req.user.id, 'INTERVIEW_COMPLETED').catch(() => {});
       
       const scores = session.messages
         .filter(m => m.feedback?.score)

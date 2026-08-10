@@ -40,6 +40,7 @@ export const ATSReport = () => {
     try {
       const { data } = await api.post('/resume/ats', { jobDescription: description });
       setReport(data.report);
+      window.dispatchEvent(new Event('gamification-updated'));
     } catch (err: any) {
       if (err.response?.status === 404) {
         setNeedsResume(true);

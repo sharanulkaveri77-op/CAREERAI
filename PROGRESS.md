@@ -80,6 +80,27 @@ Phase-by-phase record of what has been built, what was assumed, and what needs m
 4. Track the same job twice → friendly "already on your board" error.
 5. Kill the backend mid-drag → card reverts to its original column.
 
+## Phase D — Gamification (COMPLETE)
+
+### Built
+- **`Gamification` model** (server-only, no UI persistence) — `{ xp, streakCount, lastActivityDate (UTC day key), counts, badges[], recentEvents[] }`, one doc per user.
+- **`gamification.service.ts`** — XP table (resume +20, ATS +15, roadmap +50, application +10, stage advance +15, interview +40), level curve `sqrt(xp/150)`, calendar-day streak logic (consecutive UTC days, else reset), and a 13-badge catalog with deterministic checks.
+- **Award hooks** (fire-and-forget, `.catch(() => {})` so gamification can never break a core flow): resume analyze, ATS check (meta: score → "ATS Maestro" 90+ badge), roadmap generate, application create, column move (status change only), interview completion.
+- **`GET /api/gamification`** → snapshot `{ xp, level, xpIntoLevel, xpForNextLevel, streakCount, badges (earned flags), recentEvents }`.
+- **`GamificationCard`** on the dashboard — level + XP progress bar, streak flame, "Recent" XP activity, and a 13-slot badge shelf (locked badges grayscale with tooltips).
+- **Live refresh**: actions dispatch a `window` `gamification-updated` event; card refetches.
+
+### Assumptions
+- No manual test-award endpoint; badges unlock only through real usage.
+- Streak is UTC-calendar based, not 24-hour rolling.
+
+### Manual test checklist
+1. Analyze resume → XP +20, 📄 Documented badge lights up, level bar advances.
+2. Run ATS check → +15; add a job to the tracker → +10 ("On Board").
+3. Drag a card to a new column → +15 ("Climbing" at 3 moves).
+4. Generate roadmap → +50 ("Stargazer"); complete a mock interview → +40 ("Interview Ready").
+5. Live reload of the card: verify badge shelf updates without an F5.
+
 ## Next phases
 - **Phase D**: Gamified progress (streaks, XP, badges).
 - **Phase E**: PDF export (resume report + roadmap).

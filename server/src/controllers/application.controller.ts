@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../middlewares/auth';
 import Application, { APPLICATION_STATUSES, ApplicationStatus, IApplication } from '../models/Application';
 import Job from '../models/Job';
+import { awardXp } from '../services/gamification.service';
 
 /**
  * Application Tracker (Kanban) controller — Phase C.
@@ -83,6 +84,8 @@ export const createApplication = async (req: AuthRequest, res: Response): Promis
       ...appData,
     });
 
+    void awardXp(req.user.id, 'APPLICATION_ADDED').catch(() => {});
+
     res.status(201).json({ message: 'Application added to board', application });
   } catch (error) {
     console.error('Create application error:', error);
@@ -105,6 +108,7 @@ export const updateApplication = async (req: AuthRequest, res: Response): Promis
 
     const { status, position } = req.body ?? {};
     const updates: Partial<IApplication> = {};
+    let statusChanged = false;
 
     if (typeof status === 'string' && (APPLICATION_STATUSES as readonly string[]).includes(status)) {
       const newStatus = status as ApplicationStatus;
@@ -113,6 +117,7 @@ export const updateApplication = async (req: AuthRequest, res: Response): Promis
       if (newStatus !== application.status && typeof position !== 'number') {
         updates.position = await nextPositionInColumn(req.user.id, newStatus);
       }
+      statusChanged = newStatus !== application.status;
       updates.status = newStatus;
     }
 
@@ -127,6 +132,10 @@ export const updateApplication = async (req: AuthRequest, res: Response): Promis
 
     application.set(updates);
     await application.save();
+
+    if (statusChanged) {
+      void awardXp(req.user.id, 'STAGE_ADVANCED').catch(() => {});
+    }
 
     res.status(200).json({ message: 'Application updated', application });
   } catch (error) {
