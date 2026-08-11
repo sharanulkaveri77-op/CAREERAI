@@ -142,4 +142,27 @@ Phase-by-phase record of what has been built, what was assumed, and what needs m
 5. Download both PDFs → resume report contains the ATS audit; roadmap shows checkbox progress.
 6. Badge shelf: Documented, On Board, Stargazer, Interview Ready unlock in order; streak flame appears next session.
 
+## Deployment — Vercel only (LIVE, one env var pending)
+
+**Goal from user: "deploy in vercel only"** — no Render, no external VM.
+
+### What's live
+- **API** → `https://careerai-api.vercel.app` (`/api/health` returns `success`; protected routes return 401/404 correctly).
+- **Frontend** → `https://careerai-alpha.vercel.app` (HTTP 200, SPA rewrites working).
+
+### Architecture
+- `server/src/app.ts` — Express app assembled, exported; `server/src/index.ts` — local-only entry (listen + DB fail-fast); `server/api/index.ts` — Vercel serverless entry (default-export the app, connect DB on cold start).
+- `server/vercel.json` — classic `builds` (`@vercel/node` on `api/index.ts`) + catch-all `routes` so **every** path hits the one lambda. Deliberately bypasses the auto-detected "express" framework preset (see pitfalls).
+- `client/vercel.json` — SPA rewrite to `index.html`; `VITE_API_URL` env points the axios client at the API.
+- Env vars set in Vercel: `JWT_SECRET`, `GROQ_API_KEY` (API), `VITE_API_URL` (client). **Pending: `MONGODB_URI`** (user is creating a free Atlas cluster; without it `connectDB` intentionally fails fast on Vercel — see `src/config/db.ts`).
+
+### Pitfalls hit & fixed (documented in `deployment_checklist.md`)
+1. Stale `api/index.js` next to `index.ts` → "conflicting paths" deploy error → deleted, redeployed.
+2. Vercel's "express" framework preset built a **second** lambda at path `index`; `/api/*` 404'd while root hit the wrong function → replaced with explicit `builds` + `routes`.
+3. pdf-parse **v2** crashed Vercel's Node runtime at boot (`DOMMatrix is not defined` — browser pdfjs in a serverless lambda) → pinned `pdf-parse@1.1.1` (pure Node CJS), reverted `parser.service.ts` + export tests to the v1 callable API.
+
+### Remaining steps
+1. User pastes Atlas connection string → `vercel env add MONGODB_URI production` → `vercel --prod --yes`.
+2. Full E2E against prod: register → seed jobs → track/drag → resume upload (parses PDF!) → ATS → roadmap → interview → PDF downloads → badge unlocks.
+
 ## ALL PHASES COMPLETE — delivery ready

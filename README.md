@@ -87,9 +87,17 @@ Phases A–E are complete and each was shipped as a single commit:
 
 See `PROGRESS.md` for per-phase notes and manual test checklists, and `DECISIONS.md` for the reasoning behind each architectural choice.
 
-## Deployment
+## Deployment (Vercel only — live)
 
-- **Frontend**: configured for Vercel (`vercel.json`).
-- **Backend**: configured for Render (`render.yaml`).
+Everything runs on Vercel as two projects: a static frontend and the Express API as a single serverless function.
 
-Follow `deployment_checklist.md` for step-by-step launch instructions.
+| Part | URL | Config |
+| --- | --- | --- |
+| Frontend (Vite SPA) | https://careerai-alpha.vercel.app | `client/vercel.json` (SPA rewrite) |
+| Backend (Express → one lambda) | https://careerai-api.vercel.app | `server/vercel.json` (`builds` + catch-all `routes`) |
+
+Required environment variables on the **API** project: `MONGODB_URI` (Atlas), `JWT_SECRET`, `GROQ_API_KEY`. On the **client** project: `VITE_API_URL=https://careerai-api.vercel.app/api`.
+
+Redeploy any time with `vercel --prod --yes` from the `server/` or `client/` directory (CLI is linked to the projects).
+
+See `deployment_checklist.md` for the step-by-step launch guide, including creating a free MongoDB Atlas cluster.
