@@ -1,0 +1,89 @@
+name: CD · Production Deploy
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: cd-production
+  cancel-in-progress: false
+
+# Only runs once secrets.VERCEL_TOKEN exists (see README → Pipeline section).
+# Org + project IDs come from the linked projects (.vercel/project.json).
+env:
+  VERCEL_ORG_ID: team_SCHJ4axXjcFefinXX1Gwybbc
+
+jobs:
+  deploy-api:
+    name: Deploy API · careerai-api
+    if: ${{ secrets.VERCEL_TOKEN != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERCEL_PROJECT_ID: prj_kGAkPkSxp59waXTMuSow2iCzkuDL
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Vercel CLI
+        run: npm i -g vercel@latest
+
+      - name: Pull production environment
+        run: vercel pull --yes --environment=production
+
+      - name: Build (serverless)
+        run: vercel build --prod
+
+      - name: Deploy to production
+        run: vercel deploy --prebuilt --prod --yes
+
+  deploy-web:
+    name: Deploy Frontend · careerai
+    if: ${{ secrets.VERCEL_TOKEN != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERCEL_PROJECT_ID: prj_xgoVLet3RGcis5lcxsUJCmyMMRKT
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Vercel CLI
+        run: npm i -g vercel@latest
+
+      - name: Pull production environment
+        run: vercel pull --yes --environment=production
+
+      - name: Build (SPA)
+        run: vercel build --prod
+
+      - name: Deploy to production
+        run: vercel deploy --prebuilt --prod --yes

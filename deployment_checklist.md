@@ -64,6 +64,25 @@ Invoke-RestMethod https://careerai-alpha.vercel.app/login         # HTTP 200
 | `ReferenceError: DOMMatrix is not defined` on boot | pdf-parse **v2** bundles browser-only pdfjs which crashes in Vercel's node runtime | Use `pdf-parse@1.1.1` (pure Node CJS); see `src/services/parser.service.ts` |
 | Registration works locally but 500s in prod | `MONGODB_URI` not set — `connectDB` throws by design on Vercel without it (`src/config/db.ts`) | Set the env var and redeploy |
 
-## 7. CI
+## 7. CI/CD Pipelines (GitHub Actions)
 
-`.github/workflows/ci.yml` runs server tests + client lint/build on every push to `main` — deployment itself is manual via the CLI (or you can wire GitHub Auto-Deploy in the Vercel dashboard later).
+| Workflow | File | Trigger | Purpose |
+| --- | --- | --- | --- |
+| CI | `.github/workflows/ci.yml` | push/PR to `main` | Server build + tests, client lint + build. |
+| CD · Production Deploy | `.github/workflows/cd.yml` | push to `main` | `vercel build --prebuilt --prod` for **both** projects. |
+| Preview Deploy | `.github/workflows/preview.yml` | PR open/sync | Deploys preview builds, comments URLs on the PR. |
+| Dependabot | `.github/dependabot.yml` | weekly | Automated dependency PRs (npm + actions). |
+
+To activate auto-deploys, add one GitHub Actions secret — `VERCEL_TOKEN` — created at
+https://vercel.com/account/settings/tokens (also see README → CI/CD Pipelines):
+
+```powershell
+gh secret set VERCEL_TOKEN
+```
+
+The workflows already carry `VERCEL_ORG_ID` (`team_SCHJ4axXjcFefinXX1Gwybbc`) and both
+`VERCEL_PROJECT_ID`s (`prj_kGAkPkSxp59waXTMuSow2iCzkuDL` = API, `prj_xgoVLet3RGcis5lcxsUJCmyMMRKT` = web)
+from the linked projects — no other setup required. Until the secret exists, the deploy jobs skip
+gracefully and CI stays green.
+
+> Manual deploys remain available: `vercel --prod --yes` from `server/` or `client/`.

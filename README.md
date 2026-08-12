@@ -1,5 +1,10 @@
 # CareerAI — Intelligent Career Growth Platform
 
+[![CI](https://github.com/sharanulkaveri77-op/CAREERAI/actions/workflows/ci.yml/badge.svg)](https://github.com/sharanulkaveri77-op/CAREERAI/actions/workflows/ci.yml)
+[![CD](https://github.com/sharanulkaveri77-op/CAREERAI/actions/workflows/cd.yml/badge.svg)](https://github.com/sharanulkaveri77-op/CAREERAI/actions/workflows/cd.yml)
+[![Dependabot](https://img.shields.io/badge/dependencies-updated-brightgreen?logo=dependabot)](https://github.com/sharanulkaveri77-op/CAREERAI/security/dependabot)
+[![Node](https://img.shields.io/badge/node-22-green?logo=nodedotjs)](https://nodejs.org)
+
 CareerAI is an AI-powered career coaching platform that helps job seekers align their skills with market demand, generate personalized learning roadmaps, practice technical interviews, and track applications to offer. Built as a full-stack capstone with React, TypeScript, Express, MongoDB and the Groq AI API.
 
 ## 🚀 Live Demo
@@ -106,4 +111,22 @@ Required environment variables on the **API** project: `MONGODB_URI` (Atlas), `J
 
 Redeploy any time with `vercel --prod --yes` from the `server/` or `client/` directory (CLI is linked to the projects).
 
-See `deployment_checklist.md` for the step-by-step launch guide, including creating a free MongoDB Atlas cluster.
+### CI/CD Pipelines
+
+| Workflow | Trigger | What it does |
+| --- | --- | --- |
+| `CI` | push to `main`, any PR | Server: `npm ci` → `build` → `jest`. Client: `npm ci` → `oxlint` → `build`. |
+| `CD · Production Deploy` | push to `main` | Auto-deploys API + frontend to Vercel production (`vercel build --prebuilt --prod`). |
+| `Preview Deploy` | PR open/sync/reopen | Deploys preview builds of both projects and comments the URLs on the PR. |
+| `Dependabot` | weekly | Opens PRs for npm + GitHub Actions dependency updates. |
+
+**Enable auto-deploys (one-time):**
+
+1. Create a token at https://vercel.com/account/settings/tokens (e.g. `CareerAI CI`).
+2. Add it as a GitHub Actions secret named `VERCEL_TOKEN`:
+   `gh secret set VERCEL_TOKEN` (or **Settings → Secrets and variables → Actions**).
+3. Push to `main` — CI runs, then CD auto-deploys both projects. Previews work on every PR.
+
+Org/project IDs used by the workflows are already wired in from the linked projects, so no other configuration is needed.
+
+See `deployment_checklist.md` for the full launch guide, including creating a free MongoDB Atlas cluster.

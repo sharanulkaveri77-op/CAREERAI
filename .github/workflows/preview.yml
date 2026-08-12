@@ -1,0 +1,118 @@
+name: Preview Deploy
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: preview-${{ github.head_ref }}
+  cancel-in-progress: true
+
+env:
+  VERCEL_ORG_ID: team_SCHJ4axXjcFefinXX1Gwybbc
+  VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+jobs:
+  preview-api:
+    name: Preview API · careerai-api
+    if: ${{ secrets.VERCEL_TOKEN != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERCEL_PROJECT_ID: prj_kGAkPkSxp59waXTMuSow2iCzkuDL
+    defaults:
+      run:
+        working-directory: server
+    outputs:
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Vercel CLI
+        run: npm i -g vercel@latest
+
+      - name: Pull preview environment
+        run: vercel pull --yes --environment=preview
+
+      - name: Build (serverless)
+        run: vercel build
+
+      - name: Deploy preview
+        id: deploy
+        run: echo "url=$(vercel deploy --prebuilt --yes)" >> $GITHUB_OUTPUT
+
+  preview-web:
+    name: Preview Frontend · careerai
+    if: ${{ secrets.VERCEL_TOKEN != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      VERCEL_PROJECT_ID: prj_xgoVLet3RGcis5lcxsUJCmyMMRKT
+    defaults:
+      run:
+        working-directory: client
+    outputs:
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Vercel CLI
+        run: npm i -g vercel@latest
+
+      - name: Pull preview environment
+        run: vercel pull --yes --environment=preview
+
+      - name: Build (SPA)
+        run: vercel build
+
+      - name: Deploy preview
+        id: deploy
+        run: echo "url=$(vercel deploy --prebuilt --yes)" >> $GITHUB_OUTPUT
+
+  comment:
+    name: Post preview links
+    if: ${{ secrets.VERCEL_TOKEN != '' }}
+    needs: [preview-api, preview-web]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comment preview URLs on PR
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const apiUrl = '${{ needs.preview-api.outputs.url }}';
+            const webUrl = '${{ needs.preview-web.outputs.url }}';
+            const body = [
+              '## Preview Deployments',
+              '',
+              `- **Frontend:** ${webUrl || '_skipped_ (secret not configured)_'}`,
+              `- **API:** ${apiUrl || '_skipped_ (secret not configured)_'}`,
+            ].join('\n');
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body,
+            });
