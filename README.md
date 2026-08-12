@@ -2,6 +2,12 @@
 
 CareerAI is an AI-powered career coaching platform that helps job seekers align their skills with market demand, generate personalized learning roadmaps, practice technical interviews, and track applications to offer. Built as a full-stack capstone with React, TypeScript, Express, MongoDB and the Groq AI API.
 
+## 🚀 Live Demo
+
+[**careerai-alpha.vercel.app**](https://careerai-alpha.vercel.app)
+
+Create an account, then hit **Seed Sample Jobs** in the Job Matcher to load demo data.
+
 ![Dashboard Preview](./client/public/dashboard-placeholder.png)
 
 ## Features
