@@ -82,7 +82,8 @@ gh secret set VERCEL_TOKEN
 
 The workflows already carry `VERCEL_ORG_ID` (`team_SCHJ4axXjcFefinXX1Gwybbc`) and both
 `VERCEL_PROJECT_ID`s (`prj_kGAkPkSxp59waXTMuSow2iCzkuDL` = API, `prj_xgoVLet3RGcis5lcxsUJCmyMMRKT` = web)
-from the linked projects — no other setup required. Until the secret exists, the deploy jobs skip
-gracefully and CI stays green.
+from the linked projects — no other setup required. `VERCEL_TOKEN` is set (repo secret, added 2026-08-13;
+currently using the local CLI session token — replace it anytime with a dedicated token from
+https://vercel.com/account/settings/tokens).
 
 > Manual deploys remain available: `vercel --prod --yes` from `server/` or `client/`.
