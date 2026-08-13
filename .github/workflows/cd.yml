@@ -8,15 +8,14 @@ concurrency:
   group: cd-production
   cancel-in-progress: false
 
-# Only runs once secrets.VERCEL_TOKEN exists (see README → Pipeline section).
-# Org + project IDs come from the linked projects (.vercel/project.json).
+# Runs the deploy steps only when secrets.VERCEL_TOKEN exists (see README → CI/CD Pipeline).
+# The token check lives at STEP level because `secrets` is unavailable in job-level `if`.
 env:
   VERCEL_ORG_ID: team_SCHJ4axXjcFefinXX1Gwybbc
 
 jobs:
   deploy-api:
     name: Deploy API · careerai-api
-    if: ${{ secrets.VERCEL_TOKEN != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -42,18 +41,24 @@ jobs:
       - name: Install Vercel CLI
         run: npm i -g vercel@latest
 
+      - name: Skip when VERCEL_TOKEN not configured
+        if: ${{ env.VERCEL_TOKEN == '' }}
+        run: echo "VERCEL_TOKEN not set — deploy skipped (see README → CI/CD Pipeline)"
+
       - name: Pull production environment
+        if: ${{ env.VERCEL_TOKEN != '' }}
         run: vercel pull --yes --environment=production
 
       - name: Build (serverless)
+        if: ${{ env.VERCEL_TOKEN != '' }}
         run: vercel build --prod
 
       - name: Deploy to production
+        if: ${{ env.VERCEL_TOKEN != '' }}
         run: vercel deploy --prebuilt --prod --yes
 
   deploy-web:
     name: Deploy Frontend · careerai
-    if: ${{ secrets.VERCEL_TOKEN != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -79,11 +84,18 @@ jobs:
       - name: Install Vercel CLI
         run: npm i -g vercel@latest
 
+      - name: Skip when VERCEL_TOKEN not configured
+        if: ${{ env.VERCEL_TOKEN == '' }}
+        run: echo "VERCEL_TOKEN not set — deploy skipped (see README → CI/CD Pipeline)"
+
       - name: Pull production environment
+        if: ${{ env.VERCEL_TOKEN != '' }}
         run: vercel pull --yes --environment=production
 
       - name: Build (SPA)
+        if: ${{ env.VERCEL_TOKEN != '' }}
         run: vercel build --prod
 
       - name: Deploy to production
+        if: ${{ env.VERCEL_TOKEN != '' }}
         run: vercel deploy --prebuilt --prod --yes

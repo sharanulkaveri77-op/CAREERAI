@@ -8,6 +8,8 @@ concurrency:
   group: preview-${{ github.head_ref }}
   cancel-in-progress: true
 
+# Preview steps run only when secrets.VERCEL_TOKEN exists (see README → CI/CD Pipeline).
+# The token check lives at STEP level because `secrets` is unavailable in job-level `if`.
 env:
   VERCEL_ORG_ID: team_SCHJ4axXjcFefinXX1Gwybbc
   VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
@@ -15,7 +17,6 @@ env:
 jobs:
   preview-api:
     name: Preview API · careerai-api
-    if: ${{ secrets.VERCEL_TOKEN != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -42,19 +43,25 @@ jobs:
       - name: Install Vercel CLI
         run: npm i -g vercel@latest
 
+      - name: Skip when VERCEL_TOKEN not configured
+        if: ${{ env.VERCEL_TOKEN == '' }}
+        run: echo "VERCEL_TOKEN not set — preview skipped (see README → CI/CD Pipeline)"
+
       - name: Pull preview environment
+        if: ${{ env.VERCEL_TOKEN != '' }}
         run: vercel pull --yes --environment=preview
 
       - name: Build (serverless)
+        if: ${{ env.VERCEL_TOKEN != '' }}
         run: vercel build
 
       - name: Deploy preview
         id: deploy
+        if: ${{ env.VERCEL_TOKEN != '' }}
         run: echo "url=$(vercel deploy --prebuilt --yes)" >> $GITHUB_OUTPUT
 
   preview-web:
     name: Preview Frontend · careerai
-    if: ${{ secrets.VERCEL_TOKEN != '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -81,19 +88,25 @@ jobs:
       - name: Install Vercel CLI
         run: npm i -g vercel@latest
 
+      - name: Skip when VERCEL_TOKEN not configured
+        if: ${{ env.VERCEL_TOKEN == '' }}
+        run: echo "VERCEL_TOKEN not set — preview skipped (see README → CI/CD Pipeline)"
+
       - name: Pull preview environment
+        if: ${{ env.VERCEL_TOKEN != '' }}
         run: vercel pull --yes --environment=preview
 
       - name: Build (SPA)
+        if: ${{ env.VERCEL_TOKEN != '' }}
         run: vercel build
 
       - name: Deploy preview
         id: deploy
+        if: ${{ env.VERCEL_TOKEN != '' }}
         run: echo "url=$(vercel deploy --prebuilt --yes)" >> $GITHUB_OUTPUT
 
   comment:
     name: Post preview links
-    if: ${{ secrets.VERCEL_TOKEN != '' }}
     needs: [preview-api, preview-web]
     runs-on: ubuntu-latest
     steps:
@@ -107,8 +120,8 @@ jobs:
             const body = [
               '## Preview Deployments',
               '',
-              `- **Frontend:** ${webUrl || '_skipped_ (secret not configured)_'}`,
-              `- **API:** ${apiUrl || '_skipped_ (secret not configured)_'}`,
+              `- **Frontend:** ${webUrl || '_skipped_ (VERCEL_TOKEN not configured)_'}`,
+              `- **API:** ${apiUrl || '_skipped_ (VERCEL_TOKEN not configured)_'}`,
             ].join('\n');
             await github.rest.issues.createComment({
               issue_number: context.issue.number,
